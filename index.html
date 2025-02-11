@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Cờ Caro</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        #board { display: grid; margin: 20px auto; gap: 2px; }
+        .cell {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid black;
+            font-size: 24px; font-weight: bold;
+            cursor: pointer;
+        }
+        .cell.taken { cursor: default; }
+        .cell.x { color: green; }
+        .cell.o { color: red; }
+        .win { background-color: yellow; }
+        .last-move { background-color: lightgray; }
+    </style>
+</head>
+<body>
+    <h1>Game Cờ Caro</h1>
+    <label for="size">Chọn kích thước bảng:</label>
+    <input type="number" id="size" min="3" max="20" value="10">
+    <button onclick="initGame()">Tạo Bảng</button>
+    <button onclick="undoMove()">Đi lại</button>
+    <button onclick="resetGame()">Xoá Bảng</button>
+    <div id="board"></div>
+
+    <script>
+        let boardSize = 10;
+        let currentPlayer = "X";
+        let moves = [];
+        let lastMove = null;
+
+        function initGame() {
+            boardSize = parseInt(document.getElementById("size").value);
+            const board = document.getElementById("board");
+            board.innerHTML = "";
+            board.style.gridTemplateColumns = `repeat(${boardSize}, 40px)`;
+            board.style.gridTemplateRows = `repeat(${boardSize}, 40px)`;
+            moves = [];
+            lastMove = null;
+            currentPlayer = "X";
+
+            for (let i = 0; i < boardSize * boardSize; i++) {
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.dataset.index = i;
+                cell.addEventListener("click", handleMove);
+                board.appendChild(cell);
+            }
+        }
+
+        function handleMove(event) {
+            const cell = event.target;
+            if (!cell.textContent) {
+                if (lastMove) lastMove.classList.remove("last-move");
+                cell.textContent = currentPlayer;
+                cell.classList.add("taken", currentPlayer.toLowerCase(), "last-move");
+                moves.push(cell);
+                lastMove = cell;
+                if (checkWin(cell)) {
+                    highlightWinningCells();
+                    alert(`${currentPlayer} thắng!`);
+                    return;
+                }
+                currentPlayer = currentPlayer === "X" ? "O" : "X";
+            }
+        }
+
+        function undoMove() {
+            if (moves.length > 0) {
+                const lastMove = moves.pop();
+                lastMove.textContent = "";
+                lastMove.classList.remove("taken", "x", "o", "last-move");
+                currentPlayer = currentPlayer === "X" ? "O" : "X";
+            }
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        function checkWin(cell) {
+            const index = parseInt(cell.dataset.index);
+            const row = Math.floor(index / boardSize);
+            const col = index % boardSize;
+            const symbol = cell.textContent;
+
+            function count(dx, dy) {
+                let count = 1;
+                for (let i = 1; i < 5; i++) {
+                    const r = row + i * dy;
+                    const c = col + i * dx;
+                    if (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
+                        const nextCell = document.querySelector(`[data-index='${r * boardSize + c}']`);
+                        if (nextCell.textContent === symbol) count++; else break;
+                    }
+                }
+                return count;
+            }
+
+            return (
+                count(1, 0) + count(-1, 0) - 1 >= 5 || // Horizontal
+                count(0, 1) + count(0, -1) - 1 >= 5 || // Vertical
+                count(1, 1) + count(-1, -1) - 1 >= 5 || // Diagonal \
+                count(1, -1) + count(-1, 1) - 1 >= 5    // Diagonal /
+            );
+        }
+
+        function highlightWinningCells() {
+            document.querySelectorAll(".cell").forEach(cell => {
+                if (cell.textContent === currentPlayer) {
+                    cell.classList.add("win");
+                }
+            });
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
